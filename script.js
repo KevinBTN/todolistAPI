@@ -32,12 +32,12 @@ const createHtml = (task) =>{
     </div>
     </li>
     <li class="list-group-item px-3 py-1 d-flex align-items-center flex-grow-1 border-0 bg-transparent">
-    <p class="lead fw-normal mb-0">${task.Title}</p>
+    <p class="lead fw-normal mb-0">${task.Title + task.id}</p>
     </li>
     <li class="list-group-item ps-3 pe-0 py-1 rounded-0 border-0 bg-transparent">
     <div class="d-flex flex-row justify-content-end mb-1">
-    <a href="${tasks[0].indexOf(task)}" class="editTaskBtn text-info" data-mdb-toggle="tooltip" title="Edit todo"><i class="fas fa-pencil-alt me-3"></i></a>
-    <a href="${tasks[0].indexOf(task)}" class="deleteTaskBtn text-danger" data-mdb-toggle="tooltip" title="Delete todo"><i class="fas fa-trash-alt"></i></a>
+    <a href="${tasks.indexOf(task)}" class="editTaskBtn text-info" data-mdb-toggle="tooltip" title="Edit todo"><i class="fas fa-pencil-alt me-3"></i></a>
+    <a href="${tasks.indexOf(task)}" class="deleteTaskBtn text-danger" data-mdb-toggle="tooltip" title="Delete todo"><i class="fas fa-trash-alt"></i></a>
     </div>
     <div class="text-end text-muted">
     <a href="#!" class="text-muted" data-mdb-toggle="tooltip" title="Created date">
@@ -46,7 +46,7 @@ const createHtml = (task) =>{
     </li>
     </ul>
     
-    <div id="edit${tasks[0].indexOf(task)}" class="card-body">
+    <div id="edit${tasks.indexOf(task)}" class="card-body">
     
     </div>
     `
@@ -79,17 +79,16 @@ const editHTML = (task) => {
     <button type="submit"  class="btn mt-3 btn-primary">Valider la modification</button>
     </form>
     `
-    document.getElementById(`edit${tasks[0].indexOf(task)}`).innerHTML = editTaskHtml;
+    document.getElementById(`edit${tasks.indexOf(task)}`).innerHTML = editTaskHtml;
     document.querySelectorAll(".editForm").forEach(form =>{
         form.addEventListener("submit", (e)=>{
             e.preventDefault();
             editTask(form);
-            getTask();
         });
     })
     $(".datepick").each(function(){
         $(this).datepicker({ dateFormat: 'yy-mm-dd' }).val();
-        $(this).datepicker("setDate",  `${tasks[0][tasks[0].indexOf(task)].date.split("T")[0]}` ); 
+        $(this).datepicker("setDate",  `${tasks[tasks.indexOf(task)].date.split("T")[0]}` ); 
     })
 }
 
@@ -104,44 +103,50 @@ const editTask = (form)=>{
         "date": `${form[3].value}`,
         "periority": `${form[2].value}`
     })
+    
 })
+
 }
 const deleteTask = (task) =>{
-    fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + task, {
+    fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + task.id, {
     method: "DELETE",
     headers:  {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`}
 })
-console.log(task + " deleted");
+
+cleanDom();
+getTask();
 }
 
 const getTask = async () =>{
+    tasks.length = 0;
     let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks` , {
     method: "GET", 
     headers:  {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`},
 })
-tasks.push(await res.json());
-console.log(tasks);
+let response =  await res.json();
+response.forEach( task =>{
+    tasks.push(task);
+})
+
 if(res.status == 401){
     localStorage.removeItem('token');
     getToken;
 }
-tasks[0].forEach(task =>{
+tasks.forEach(task =>{
     createHtml(task);
 })
 document.querySelectorAll(".editTaskBtn").forEach(btn =>{
     btn.addEventListener("click", (e)=>{
         e.preventDefault();
-        editHTML(tasks[0][btn.getAttribute("href")]);
-        console.log(tasks[0][btn.getAttribute("href")])
+        editHTML(tasks[btn.getAttribute("href")]);
     })
 })
 document.querySelectorAll(".deleteTaskBtn").forEach(btn =>{
     btn.addEventListener("click", (e)=>{
         e.preventDefault();
-        deleteTask(tasks[0][btn.getAttribute("href")].id);
-        console.log(tasks[0][btn.getAttribute("href")].id)
+        deleteTask(tasks[btn.getAttribute("href")]);
     })
 })
 }
@@ -160,6 +165,11 @@ const newTask = async (title, description, date, priority) =>{
 })
 }
 
+const cleanDom = ()=>{
+    const listContainer  = document.getElementById("listContainer");
+    listContainer.innerHTML = '';
+}
+
 document.getElementById("addTask").addEventListener('submit', (e)=>{
     e.preventDefault();
     const titre = document.getElementById("titre");
@@ -167,7 +177,8 @@ document.getElementById("addTask").addEventListener('submit', (e)=>{
     const datepicker = document.getElementById("datepicker");
     const priority = document.getElementById("priorite");
     newTask(titre.value, description.value, datepicker.value, priority.value);  
-    alert("hey")
+    cleanDom();
+    getTask();
 })
 document.addEventListener("DOMContentLoaded", ()=>{
     const application = document.getElementById("application");
@@ -183,6 +194,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
                 ).then(login.classList.add("d-none"),
                 application.classList.remove("d-none")
                 );
+                
                 getTask();
             })
         }
