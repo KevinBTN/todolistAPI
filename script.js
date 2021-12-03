@@ -37,7 +37,7 @@ const createHtml = (task) =>{
     <li class="list-group-item ps-3 pe-0 py-1 rounded-0 border-0 bg-transparent">
     <div class="d-flex flex-row justify-content-end mb-1">
     <a href="${tasks[0].indexOf(task)}" class="editTaskBtn text-info" data-mdb-toggle="tooltip" title="Edit todo"><i class="fas fa-pencil-alt me-3"></i></a>
-    <a href="#!" class=" text-danger" data-mdb-toggle="tooltip" title="Delete todo"><i class="fas fa-trash-alt"></i></a>
+    <a href="${tasks[0].indexOf(task)}" class="deleteTaskBtn text-danger" data-mdb-toggle="tooltip" title="Delete todo"><i class="fas fa-trash-alt"></i></a>
     </div>
     <div class="text-end text-muted">
     <a href="#!" class="text-muted" data-mdb-toggle="tooltip" title="Created date">
@@ -106,6 +106,14 @@ const editTask = (form)=>{
     })
 })
 }
+const deleteTask = (task) =>{
+    fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + task, {
+    method: "DELETE",
+    headers:  {'accept': 'application/json',
+    'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`}
+})
+console.log(task + " deleted");
+}
 
 const getTask = async () =>{
     let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks` , {
@@ -121,12 +129,19 @@ if(res.status == 401){
 }
 tasks[0].forEach(task =>{
     createHtml(task);
-    console.log(task)
 })
 document.querySelectorAll(".editTaskBtn").forEach(btn =>{
     btn.addEventListener("click", (e)=>{
         e.preventDefault();
         editHTML(tasks[0][btn.getAttribute("href")]);
+        console.log(tasks[0][btn.getAttribute("href")])
+    })
+})
+document.querySelectorAll(".deleteTaskBtn").forEach(btn =>{
+    btn.addEventListener("click", (e)=>{
+        e.preventDefault();
+        deleteTask(tasks[0][btn.getAttribute("href")].id);
+        console.log(tasks[0][btn.getAttribute("href")].id)
     })
 })
 }
