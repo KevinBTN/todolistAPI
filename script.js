@@ -32,7 +32,7 @@ const createHtml = (task) =>{
     </div>
     </li>
     <li class="list-group-item px-3 py-1 d-flex align-items-center flex-grow-1 border-0 bg-transparent">
-    <p class="lead fw-normal mb-0">${task.Title + task.id}</p>
+    <p class="${task.periority=="haute"?"text-danger ": task.periority=="basse"?"text-success ":""}lead fw-bold mb-0">Id: ${task.id} -  ${task.Title} </p>
     </li>
     <li class="list-group-item ps-3 pe-0 py-1 rounded-0 border-0 bg-transparent">
     <div class="d-flex flex-row justify-content-end mb-1">
@@ -45,20 +45,28 @@ const createHtml = (task) =>{
     </div>
     </li>
     </ul>
-    
     <div id="edit${tasks.indexOf(task)}" class="card-body">
     
     </div>
+
     `
     listContainer.innerHTML += tasksHtml;
-
-
-
-    
+    document.querySelectorAll(".editTaskBtn").forEach(btn =>{
+        btn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            editHTML(tasks[btn.getAttribute("href")]);
+        })
+    })
+    document.querySelectorAll(".deleteTaskBtn").forEach(btn =>{
+        btn.addEventListener("click", (e)=>{
+            e.preventDefault();
+            deleteTask(tasks[btn.getAttribute("href")]);
+            console.log(tasks.indexOf(tasks[btn.getAttribute("href")]))
+        })
+    })
 }
 
-const editHTML = (task) => {
-    
+const editHTML = (task) => {  
     editTaskHtml = ``;
     editTaskHtml = `<form action="" class="editForm">
     <div class="d-flex flex-row align-items-center">
@@ -84,6 +92,7 @@ const editHTML = (task) => {
         form.addEventListener("submit", (e)=>{
             e.preventDefault();
             editTask(form);
+            document.getElementById(`edit${tasks.indexOf(task)}`).innerHTML = '';
         });
     })
     $(".datepick").each(function(){
@@ -92,8 +101,9 @@ const editHTML = (task) => {
     })
 }
 
-const editTask = (form)=>{
-    fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + form[4].value, {
+
+const editTask = async (form)=>{
+    let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + form[4].value, {
     method: "PUT",
     headers: {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`},
@@ -102,38 +112,55 @@ const editTask = (form)=>{
         "description": `${form[1].value}`,
         "date": `${form[3].value}`,
         "periority": `${form[2].value}`
-    })
-    
+    })  
 })
+let response = await res.json();
+if(res.status == 200){
+    tasks.forEach(task =>{
+        if(task.id == response.id){
+            tasks[tasks.indexOf(task)] = response;
+        }
+    })
+    const listContainer  = document.getElementById("listContainer");
+    listContainer.innerHTML = "";
+    tasks.forEach(task => {
+        createHtml(task);
+    })
+}
 
 }
-const deleteTask = (task) =>{
-    fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + task.id, {
+const deleteTask = async (task) =>{
+   let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks/` + task.id, {
     method: "DELETE",
     headers:  {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`}
 })
-
-cleanDom();
-getTask();
+if(res.status == 204){
+    tasks.splice(tasks.indexOf(task), 1);
+    const listContainer  = document.getElementById("listContainer");
+    listContainer.innerHTML = "";
+    tasks.forEach(task => {
+        createHtml(task);
+    })
+}
 }
 
 const getTask = async () =>{
-    tasks.length = 0;
     let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks` , {
     method: "GET", 
     headers:  {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`},
 })
 let response =  await res.json();
+if(response.status == 401){
+    localStorage.removeItem('token');
+    getToken;
+}
 response.forEach( task =>{
     tasks.push(task);
 })
 
-if(res.status == 401){
-    localStorage.removeItem('token');
-    getToken;
-}
+
 tasks.forEach(task =>{
     createHtml(task);
 })
@@ -152,7 +179,7 @@ document.querySelectorAll(".deleteTaskBtn").forEach(btn =>{
 }
 
 const newTask = async (title, description, date, priority) =>{
-    fetch(`https://to-do-afpa.forticas.com/public/api/tasks`,{
+   let res = await fetch(`https://to-do-afpa.forticas.com/public/api/tasks`,{
     method: "POST",
     headers: {'accept': 'application/json',
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`},
@@ -163,12 +190,17 @@ const newTask = async (title, description, date, priority) =>{
         "periority": `${priority}`
     })
 })
+let response =  await res.json();
+if(res.status == 401){
+    localStorage.removeItem('token');
+    getToken;
+}
+tasks.push(response);
+createHtml(response)
 }
 
-const cleanDom = ()=>{
-    const listContainer  = document.getElementById("listContainer");
-    listContainer.innerHTML = '';
-}
+
+
 
 document.getElementById("addTask").addEventListener('submit', (e)=>{
     e.preventDefault();
@@ -177,8 +209,6 @@ document.getElementById("addTask").addEventListener('submit', (e)=>{
     const datepicker = document.getElementById("datepicker");
     const priority = document.getElementById("priorite");
     newTask(titre.value, description.value, datepicker.value, priority.value);  
-    cleanDom();
-    getTask();
 })
 document.addEventListener("DOMContentLoaded", ()=>{
     const application = document.getElementById("application");
@@ -194,7 +224,6 @@ document.addEventListener("DOMContentLoaded", ()=>{
                 ).then(login.classList.add("d-none"),
                 application.classList.remove("d-none")
                 );
-                
                 getTask();
             })
         }
