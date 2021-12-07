@@ -32,7 +32,10 @@ const createHtml = (task) =>{
     </div>
     </li>
     <li class="list-group-item px-3 py-1 d-flex align-items-center flex-grow-1 border-0 bg-transparent">
-    <p class="${task.periority=="haute"?"text-danger ": task.periority=="basse"?"text-success ":""}lead fw-bold mb-0">Id: ${task.id} -  ${task.Title} </p>
+    <p class="${task.periority=="haute"?"text-danger ": task.periority=="basse"?"text-success ":""}lead fw-bold mb-0 title">Id: ${task.id} -  ${task.Title} </p>
+    </li>
+    <li class="list-group-item px-3 py-1 d-flex align-items-center flex-grow-1 border-0 bg-transparent">
+    <p class="lead fw-bold mb-0 title">${task.description} </p>
     </li>
     <li class="list-group-item ps-3 pe-0 py-1 rounded-0 border-0 bg-transparent">
     <div class="d-flex flex-row justify-content-end mb-1">
@@ -64,6 +67,11 @@ const createHtml = (task) =>{
             console.log(tasks.indexOf(tasks[btn.getAttribute("href")]))
         })
     })
+    document.querySelectorAll(".form-check-input").forEach(btn =>{
+        btn.addEventListener("change", ()=>{
+            btn.parentNode.parentNode.nextElementSibling.classList.toggle("barre");
+        })
+    })
 }
 
 const editHTML = (task) => {  
@@ -77,9 +85,9 @@ const editHTML = (task) => {
     </div>
     <select  class="form-select" aria-label="Default select example">
     <option >Choisissez la priorité</option>
-    <option value="haute" ${task.periority=="Haute"?"selected":""}>Haute</option>
-    <option value="normal" ${task.periority=="Normal"?"selected":""}>Normal</option>
-    <option value="basse" ${task.periority=="Basse"?"selected":""}>Basse</option>
+    <option value="haute" ${task.periority=="haute"?"selected":""}>Haute</option>
+    <option value="normal" ${task.periority=="normal"?"selected":""}>Normal</option>
+    <option value="basse" ${task.periority=="basse"?"selected":""}>Basse</option>
     </select>
     
     <div class="mt-3"><input id="date${task.id}" type="text" class="datepick form-control form-control-lg"  "></div>
@@ -136,6 +144,7 @@ const deleteTask = async (task) =>{
     'Content-Type': 'application/json', 'Authorization' : `Bearer ${localStorage.getItem(TOKEN_KEY)}`}
 })
 if(res.status == 204){
+    console.log(tasks.indexOf(task))
     tasks.splice(tasks.indexOf(task), 1);
     const listContainer  = document.getElementById("listContainer");
     listContainer.innerHTML = "";
